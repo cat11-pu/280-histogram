@@ -1,0 +1,17 @@
+{
+  "budget": 3,
+  "bucket_width": 5,
+  "quantiles": [50, 90],
+  "value_error_code": "E_BAD_VALUE",
+  "width_error_code": "E_BAD_WIDTH",
+  "event_error_code": "E_BAD_EVENT",
+  "state": { "counts": {}, "total": 0, "ledger": [], "applied": [] },
+  "events": [
+    { "id": 1, "kind": "observe", "value": 7 },
+    { "id": 2, "kind": "observe", "value": 3 },
+    { "id": 3, "kind": "observe", "value": 12 },
+    { "id": 4, "kind": "observe", "value": 22 },
+    { "id": 5, "kind": "observe", "value": 1 },
+    { "id": 6, "kind": "observe", "value": 9 }
+  ]
+}
