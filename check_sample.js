@@ -51,7 +51,9 @@ emit("与全量对照差异 =", fingerprint(closed.state) === fingerprint(fullCl
 
 
 // ---- 异常路径探针：真调用实现，看它报出什么码（不是从样例里抄）----
+const __probeCalls = { value: 0, width: 0, event: 0 };
 try {
+  __probeCalls.value += 1;
   step(Object.assign({}, { budget: 3, bucket_width: 5, quantiles: [],
     state: { counts: {}, total: 0, ledger: [], applied: [] },
     events: [{ id: 1, kind: "observe", value: -1 }] }));
@@ -60,6 +62,7 @@ try {
   emit("负值报码", error && error.code ? error.code : String(error.message));
 }
 try {
+  __probeCalls.width += 1;
   step(Object.assign({}, { budget: 3, bucket_width: 0, quantiles: [],
     state: { counts: {}, total: 0, ledger: [], applied: [] },
     events: [{ id: 1, kind: "observe", value: 7 }] }));
@@ -68,6 +71,7 @@ try {
   emit("桶宽不合法报码", error && error.code ? error.code : String(error.message));
 }
 try {
+  __probeCalls.event += 1;
   step(Object.assign({}, { budget: 3, bucket_width: 5, quantiles: [],
     state: { counts: {}, total: 0, ledger: [], applied: [] },
     events: [{ id: 1, kind: "peek", value: 7 }] }));
@@ -145,5 +149,19 @@ for (const [label, want] of Object.entries(EXPECTED)) {
   if (__same(got, want)) { console.log("一致 " + label + " = " + JSON.stringify(got)); }
   else { __bad += 1; console.log("不一致 " + label + " 期望 " + JSON.stringify(want) + " 实际 " + JSON.stringify(got)); }
 }
+// ---- 七条机检断言：不抄期望值，全部由真跑出的量直接判定 ----
+function machine(name, ok) {
+  if (ok) { console.log("机检一致 " + name); }
+  else { __bad += 1; console.log("机检不一致 " + name); }
+}
+machine("两档入库个数不同", first.observed !== wide.observed);
+machine("收尾前账大于零而收尾后归零", first.ledger_before > 0 && closed.state.ledger.length === 0);
+machine("拆两轮中间态不同而收尾态一致",
+  fingerprint(r2.state) !== fingerprint(first.state)
+  && fingerprint(closedTwo.state) === fingerprint(closed.state));
+machine("重放不再入库", replay.observed === 0);
+machine("工作计数不超事件条数", first.judged <= events.length);
+machine("与全量对照为零", fingerprint(closed.state) === fingerprint(fullClosed.state));
+machine("异常探针真调", __probeCalls.value === 1 && __probeCalls.width === 1 && __probeCalls.event === 1);
 console.log("验收项 " + (Object.keys(EXPECTED).length - __bad) + "/" + Object.keys(EXPECTED).length + " 通过");
 process.exit(__bad === 0 ? 0 : 1);
